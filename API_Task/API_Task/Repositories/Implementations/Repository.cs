@@ -1,5 +1,6 @@
 ﻿using API_Task.DAL;
 using API_Task.Entities;
+using API_Task.Entities.Base;
 using API_Task.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
@@ -7,19 +8,21 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace API_Task.Repositories.Implementations
 {
-    public class Repository : IRepository
+    public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         private AppDbContext _db;
+        private DbSet<T> _table;
         public Repository(AppDbContext db)
         {
             _db = db;
+            _table=db.Set<T>();
         }
 
        
 
-        public async Task<IQueryable<Category>> GetAll(Expression<Func<Category,bool>>?expression=null,params string[]? includes)
+        public async Task<IQueryable<T>> GetAll(Expression<Func<T,bool>>?expression=null, Expression<Func<T, object>>? orderbyExpression = null,bool isDesting=false,params string[]? includes)
         {
-          IQueryable<Category> query  =  _db.Categories;
+          IQueryable<T> query  =  _table;
             if(expression is not null)
             {
                 query = query.Where(expression);
@@ -31,12 +34,16 @@ namespace API_Task.Repositories.Implementations
                     query=query.Include(includes[i]);
                 }
             }
+            if(orderbyExpression !=null)
+            {
+               query=isDesting? query.OrderByDescending(orderbyExpression):query.OrderBy(orderbyExpression);
+            }
             return query;
         }
 
-        public async Task<Category> GetByIdAsync(int id, params string[]? includes)
+        public async Task<T> GetByIdAsync(int id, params string[]? includes)
         {
-            IQueryable<Category> data =  _db.Categories.AsNoTracking();
+            IQueryable<T> data =  _table;
             if (includes is not null)
             {
                 for (int i = 0; i < includes.Length; i++)
@@ -46,18 +53,18 @@ namespace API_Task.Repositories.Implementations
             }
             return await data.FirstOrDefaultAsync(c=>c.Id==id);
         }
-        public async Task Create(Category category)
+        public async Task Create(T entity)
         {
-            await _db.Categories.AddAsync(category);
+            await _table.AddAsync(entity);
         }
 
-        public void Delete(Category category)
+        public void Delete(T entity)
         {
-            _db.Categories.Remove(category);
+            _table.Remove(entity);
         }
-        public async Task Update(Category category)
+        public async Task Update(T entity)
         {
-            _db.Categories.Update(category);
+            _table.Update(entity);
         }
 
         public async Task SaveChangesAsync()

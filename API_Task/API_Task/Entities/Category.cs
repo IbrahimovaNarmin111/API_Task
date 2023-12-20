@@ -1,8 +1,13 @@
-﻿namespace API_Task.Entities
+﻿using API_Task.Entities.Base;
+
+namespace API_Task.Entities
 {
-    public class Category
+    public class Category:BaseEntity
     {
-        public int Id { get; set; }
+        
         public string Name { get; set; }
+        public string Description { get; set; }
+        public string Tag { get;set; }
+        public string FullName { get; set; }
     }
 }
